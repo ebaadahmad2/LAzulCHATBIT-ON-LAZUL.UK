@@ -1,1 +1,23 @@
+name: Lazul OpenRouter Proxy
+on:
+  repository_dispatch:
+    types: [chat]
 
+jobs:
+  proxy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Proxy OpenRouter API
+        run: |
+          curl -X POST '${{ github.event.client_payload.url }}' \
+            -H "Authorization: Bearer ${{ secrets.OPENROUTER_KEY }}" \
+            -H "Content-Type: application/json" \
+            -H "HTTP-Referer: ${{ github.event.client_payload.referer }}" \
+            -H "X-Title: Lazul" \
+            --data '${{ github.event.client_payload.body }}' \
+            --output /tmp/response.json \
+            --silent \
+            --fail
+      - name: Return Response
+        run: |
+          cat /tmp/response.json
