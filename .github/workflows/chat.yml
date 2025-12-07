@@ -1,23 +1,32 @@
 name: Lazul OpenRouter Proxy
 on:
+  workflow_dispatch:  # Manual trigger
   repository_dispatch:
-    types: [chat]
+    types: [lazul-chat]
 
 jobs:
   proxy:
     runs-on: ubuntu-latest
     steps:
-      - name: Proxy OpenRouter API
+      - name: Debug Input
         run: |
-          curl -X POST '${{ github.event.client_payload.url }}' \
-            -H "Authorization: Bearer ${{ secrets.OPENROUTER_KEY }}" \
+          echo "Event: ${{ github.event_name }}"
+          echo "Payload URL: ${{ github.event.client_payload.url }}"
+          echo "Model: ${{ github.event.client_payload.model }}"
+          
+      - name: Proxy to OpenRouter
+        run: |
+          URL="${{ github.event.client_payload.url }}"
+          BODY="${{ github.event.client_payload.body }}"
+          KEY="${{ secrets.OPENROUTER_KEY }}"
+          
+          echo "Proxying $URL..."
+          
+          curl -X POST "$URL" \
+            -H "Authorization: Bearer $KEY" \
             -H "Content-Type: application/json" \
             -H "HTTP-Referer: ${{ github.event.client_payload.referer }}" \
             -H "X-Title: Lazul" \
-            --data '${{ github.event.client_payload.body }}' \
-            --output /tmp/response.json \
+            --data "$BODY" \
             --silent \
-            --fail
-      - name: Return Response
-        run: |
-          cat /tmp/response.json
+            --fail || echo "Curl failed - check OPENROUTER_KEY secret"
