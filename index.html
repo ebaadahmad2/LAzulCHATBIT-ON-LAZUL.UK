@@ -1,171 +1,291 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>💎 Lazul - AI Chat Assistant</title>
-    <style>
-        body { box-sizing: border-box; }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body { width: 100%; height: 100%; overflow: hidden; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a2e 100%);
-            color: #ffffff;
-        }
-        .app-container { width: 100%; height: 100%; display: flex; flex-direction: column; max-width: 1200px; margin: 0 auto; padding: 20px; }
-        .header { flex: 0 0 auto; text-align: center; margin-bottom: 24px; animation: fadeInDown 0.6s ease-out; }
-        .app-title { font-size: 3rem; font-weight: 800; background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 8px; letter-spacing: -1px; }
-        .app-subtitle { font-size: 1.25rem; color: rgba(255, 255, 255, 0.9); font-weight: 500; }
-        .chat-container { flex: 1 1 auto; background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(20px); border-radius: 24px; padding: 24px; margin-bottom: 20px; overflow-y: auto; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6); animation: fadeIn 0.8s ease-out; min-height: 0; }
-        .message { display: flex; margin-bottom: 16px; animation: slideIn 0.3s ease-out; }
-        .message.user { justify-content: flex-end; }
-        .message.bot { justify-content: flex-start; }
-        .message-bubble { max-width: 70%; padding: 12px 18px; border-radius: 20px; word-wrap: break-word; line-height: 1.5; font-size: 0.95rem; }
-        .message.user .message-bubble { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border-bottom-right-radius: 4px; }
-        .message.bot .message-bubble { background: #2d2d2d; color: #e5e5e5; border-bottom-left-radius: 4px; }
-        .model-section { background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(20px); border-radius: 24px; padding: 20px; margin-bottom: 20px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6); }
-        .model-tabs { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
-        .tab { padding: 10px 18px; background: rgba(59, 130, 246, 0.2); border-radius: 20px; cursor: pointer; transition: all 0.3s; border: 1px solid rgba(59, 130, 246, 0.3); color: white; font-weight: 500; }
-        .tab.active { background: linear-gradient(135deg, #3b82f6, #2563eb); }
-        .status { text-align: center; padding: 12px; background: rgba(59, 130, 246, 0.1); border-radius: 12px; margin-bottom: 12px; font-size: 0.9rem; }
-        .input-section { flex: 0 0 auto; }
-        .chat-input-container { display: flex; gap: 12px; background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(20px); border-radius: 24px; padding: 20px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6); animation: fadeIn 1.2s ease-out; }
-        .chat-input { flex: 1; padding: 12px 18px; border: 2px solid #3d3d3d; border-radius: 16px; font-size: 0.95rem; transition: all 0.3s ease; outline: none; background: #1a1a1a; color: #ffffff; }
-        .chat-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
-        .send-btn { padding: 12px 24px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; border-radius: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-size: 0.95rem; }
-        .send-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4); }
-        .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .footer { text-align: center; margin-top: 16px; color: rgba(255, 255, 255, 0.8); font-size: 0.9rem; animation: fadeIn 1.4s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
-        .chat-container::-webkit-scrollbar { width: 8px; }
-        .chat-container::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); border-radius: 10px; }
-        .chat-container::-webkit-scrollbar-thumb { background: rgba(59, 130, 246, 0.3); border-radius: 10px; }
-        .chat-container::-webkit-scrollbar-thumb:hover { background: rgba(59, 130, 246, 0.5); }
-        @media (max-width: 768px) { .app-container { padding: 12px; } .app-title { font-size: 2rem; } .app-subtitle { font-size: 1rem; } .chat-container { padding: 16px; } .message-bubble { max-width: 85%; font-size: 0.9rem; } .chat-input-container { flex-direction: column; } .send-btn { width: 100%; } }
-    </style>
-</head>
-<body>
-    <div class="app-container">
-        <header class="header">
-            <h1 class="app-title">💎 Lazul</h1>
-            <p class="app-subtitle">AI Chat Assistant</p>
-        </header>
-        
-        <div class="chat-container" id="chatContainer">
-            <div class="message bot">
-                <div class="message-bubble">Welcome to Lazul! 💎 Start chatting - powered by OpenRouter's best free AI models.</div>
-            </div>
-        </div>
-        
-        <div class="model-section">
-            <div class="status" id="status">🚀 Using OpenRouter Auto (Best Free Model)</div>
-            <div class="model-tabs">
-                <div class="tab active" data-model="auto">Auto</div>
-                <div class="tab" data-model="deepseek">DeepSeek</div>
-                <div class="tab" data-model="nova">Nova</div>
-                <div class="tab" data-model="qwen">Qwen</div>
-            </div>
-        </div>
-        
-        <div class="input-section">
-            <div class="chat-input-container">
-                <input type="text" class="chat-input" id="chatInput" placeholder="Ask anything..." />
-                <button class="send-btn" id="sendBtn">Send</button>
-            </div>
-        </div>
-        
-        <footer class="footer">Made by Ebaad</footer>
+<!doctype html>
+<html lang="en" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Professional Calculator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+    }
+    
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .calculator-button {
+      transition: all 0.2s ease;
+    }
+    
+    .calculator-button:active {
+      transform: scale(0.95);
+    }
+    
+    .payment-overlay {
+      backdrop-filter: blur(8px);
+      animation: fadeIn 0.3s ease;
+    }
+    
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+    
+    .payment-card {
+      animation: slideUp 0.3s ease;
+    }
+    
+    @keyframes slideUp {
+      from {
+        transform: translateY(20px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full">
+  <main class="w-full h-full overflow-auto">
+   <div class="min-h-full flex items-center justify-center p-6" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"><!-- Calculator Card -->
+    <div id="calculatorCard" class="w-full max-w-md">
+     <div class="bg-white rounded-3xl shadow-2xl p-8"><!-- Header -->
+      <div class="text-center mb-8">
+       <h1 id="mainHeadline" class="text-4xl font-bold mb-2" style="color: #667eea;">Simplify Your Life</h1>
+       <p id="subHeadline" class="text-gray-600 text-lg">Solve answers with precision</p>
+      </div><!-- Display -->
+      <div class="mb-6">
+       <div class="bg-gray-50 rounded-2xl p-6 min-h-[80px] flex items-center justify-end border-2 border-gray-100"><input type="text" id="display" readonly class="text-right text-3xl font-light w-full bg-transparent outline-none text-gray-800" value="0" aria-label="Calculator display">
+       </div>
+      </div><!-- Calculator Buttons -->
+      <div class="grid grid-cols-4 gap-3 mb-6"><!-- Row 1 --> <button type="button" class="calculator-button bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-4 rounded-xl text-xl" data-action="clear">C</button> <button type="button" class="calculator-button bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-4 rounded-xl text-xl" data-value="/">/</button> <button type="button" class="calculator-button bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-4 rounded-xl text-xl" data-value="*">×</button> <button type="button" class="calculator-button bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-4 rounded-xl text-xl" data-action="backspace">←</button> <!-- Row 2 --> <button type="button" class="calculator-button bg-white hover:bg-gray-50 border-2 border-gray-100 text-gray-800 font-semibold py-4 rounded-xl text-xl" data-value="7">7</button> <button type="button" class="calculator-button bg-white hover:bg-gray-50 border-2 border-gray-100 text-gray-800 font-semibold py-4 rounded-xl text-xl" data-value="8">8</button> <button type="button" class="calculator-button bg-white hover:bg-gray-50 border-2 border-gray-100 text-gray-800 font-semibold py-4 rounded-xl text-xl" data-value="9">9</button> <button type="button" class="calculator-button bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-4 rounded-xl text-xl" data-value="-">−</button> <!-- Row 3 --> <button type="button" class="calculator-button bg-white hover:bg-gray-50 border-2 border-gray-100 text-gray-800 font-semibold py-4 rounded-xl text-xl" data-value="4">4</button> <button type="button" class="calculator-button bg-white hover:bg-gray-50 border-2 border-gray-100 text-gray-800 font-semibold py-4 rounded-xl text-xl" data-value="5">5</button> <button type="button" class="calculator-button bg-white hover:bg-gray-50 border-2 border-gray-100 text-gray-800 font-semibold py-4 rounded-xl text-xl" data-value="6">6</button> <button type="button" class="calculator-button bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-4 rounded-xl text-xl" data-value="+">+</button> <!-- Row 4 --> <button type="button" class="calculator-button bg-white hover:bg-gray-50 border-2 border-gray-100 text-gray-800 font-semibold py-4 rounded-xl text-xl" data-value="1">1</button> <button type="button" class="calculator-button bg-white hover:bg-gray-50 border-2 border-gray-100 text-gray-800 font-semibold py-4 rounded-xl text-xl" data-value="2">2</button> <button type="button" class="calculator-button bg-white hover:bg-gray-50 border-2 border-gray-100 text-gray-800 font-semibold py-4 rounded-xl text-xl" data-value="3">3</button> <button type="button" class="calculator-button bg-white hover:bg-gray-50 border-2 border-gray-100 text-gray-800 font-semibold py-4 rounded-xl text-xl col-span-1 row-span-2" data-value="0">0</button> <!-- Row 5 --> <button type="button" class="calculator-button bg-white hover:bg-gray-50 border-2 border-gray-100 text-gray-800 font-semibold py-4 rounded-xl text-xl col-span-2" data-value=".">.</button>
+      </div><!-- Enter Button --> <button type="button" id="enterButton" class="w-full py-4 rounded-xl text-white font-bold text-xl shadow-lg hover:shadow-xl transition-all" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"> Enter </button>
+     </div>
+    </div><!-- Payment Overlay -->
+    <div id="paymentOverlay" class="payment-overlay fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center p-6" style="z-index: 1000;">
+     <div class="payment-card bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
+      <div class="text-center mb-6">
+       <div class="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"><span class="text-3xl">🔒</span>
+       </div>
+       <h2 class="text-2xl font-bold text-gray-800 mb-2">Secure Calculation</h2>
+       <p id="priceText" class="text-gray-600 text-lg">£10 per calculation</p>
+      </div>
+      <div class="bg-gray-50 rounded-xl p-4 mb-6">
+       <div class="flex justify-between items-center mb-2"><span class="text-gray-600">Calculation:</span> <span id="calculationPreview" class="font-mono text-gray-800 font-semibold"></span>
+       </div>
+       <div class="flex justify-between items-center pt-2 border-t border-gray-200"><span class="text-gray-800 font-semibold">Total:</span> <span class="text-2xl font-bold" style="color: #667eea;">£10</span>
+       </div>
+      </div>
+      <p class="text-sm text-gray-500 text-center mb-6">Click below to proceed to secure checkout</p>
+      <div class="space-y-3"><button type="button" id="checkoutButton" class="w-full py-4 rounded-xl text-white font-bold text-lg shadow-lg hover:shadow-xl transition-all" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"> Proceed to Checkout </button> <button type="button" id="cancelButton" class="w-full py-3 rounded-xl text-gray-600 font-semibold border-2 border-gray-200 hover:bg-gray-50 transition-all"> Cancel </button>
+      </div>
+     </div>
     </div>
+   </div>
+  </main>
+  <script>
+    const defaultConfig = {
+      main_headline: "Simplify Your Life",
+      sub_headline: "Solve answers with precision",
+      price_text: "£10 per calculation",
+      button_text: "Enter",
+      background_gradient_start: "#667eea",
+      background_gradient_end: "#764ba2",
+      card_background: "#ffffff",
+      primary_color: "#667eea",
+      text_color: "#1f2937",
+      font_family: "system-ui, -apple-system, sans-serif",
+      font_size: 16
+    };
 
-    <script>
-        let currentModel = 'openrouter/auto:free';
-        
-        // Model tabs
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.onclick = () => {
-                document.querySelector('.tab.active').classList.remove('active');
-                tab.classList.add('active');
-                const modelMap = {
-                    'auto': 'openrouter/auto:free',
-                    'deepseek': 'deepseek/deepseek-r1:free',
-                    'nova': 'amazon/nova-2-lite-v1:free',
-                    'qwen': 'qwen/qwen3-coder:free'
-                };
-                currentModel = modelMap[tab.dataset.model];
-                document.getElementById('status').textContent = `🚀 Using ${tab.textContent} (${currentModel.split('/')[1] || 'Auto'})`;
-            };
+    function appendToDisplay(value) {
+      const display = document.getElementById('display');
+      if (display.value === '0') {
+        display.value = value;
+      } else {
+        display.value += value;
+      }
+    }
+
+    function clearDisplay() {
+      document.getElementById('display').value = '0';
+    }
+
+    function backspace() {
+      const display = document.getElementById('display');
+      if (display.value.length > 1) {
+        display.value = display.value.slice(0, -1);
+      } else {
+        display.value = '0';
+      }
+    }
+
+    function showPayment() {
+      const display = document.getElementById('display');
+      const calculation = display.value;
+      
+      document.getElementById('calculationPreview').textContent = calculation;
+      document.getElementById('paymentOverlay').classList.remove('hidden');
+      document.getElementById('paymentOverlay').classList.add('flex');
+    }
+
+    function closePayment() {
+      document.getElementById('paymentOverlay').classList.add('hidden');
+      document.getElementById('paymentOverlay').classList.remove('flex');
+    }
+
+    function proceedToCheckout() {
+      const calculation = document.getElementById('calculationPreview').textContent;
+      
+      const overlay = document.getElementById('paymentOverlay');
+      const card = overlay.querySelector('.payment-card');
+      card.innerHTML = `
+        <div class="text-center">
+          <div class="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center bg-green-100">
+            <span class="text-3xl">✓</span>
+          </div>
+          <h2 class="text-2xl font-bold text-gray-800 mb-2">Ready for Checkout</h2>
+          <p class="text-gray-600 mb-6">Connect this to your secure payment system to process the £10 payment for calculation: ${calculation}</p>
+          <button type="button" class="w-full py-3 rounded-xl text-white font-bold" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);" onclick="closePayment()">
+            Close
+          </button>
+        </div>
+      `;
+    }
+
+    // Set up event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+      // Calculator button clicks
+      document.querySelectorAll('[data-value]').forEach(button => {
+        button.addEventListener('click', function() {
+          appendToDisplay(this.getAttribute('data-value'));
         });
+      });
 
-        function addMessage(text, isUser) {
-            const chatContainer = document.getElementById('chatContainer');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
-            const bubbleDiv = document.createElement('div');
-            bubbleDiv.className = 'message-bubble';
-            bubbleDiv.innerHTML = text.replace(/\n/g, '<br>');
-            messageDiv.appendChild(bubbleDiv);
-            chatContainer.appendChild(messageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
+      document.querySelectorAll('[data-action="clear"]').forEach(button => {
+        button.addEventListener('click', clearDisplay);
+      });
 
-        // Demo responses (no API key needed)
-        const demoResponses = {
-            auto: [
-                "Lazul is using OpenRouter's smartest free model for this response! 🚀",
-                "Auto mode picked the best available free AI - smart routing in action.",
-                "OpenRouter automatically selected optimal free model for your query!"
-            ],
-            deepseek: [
-                "🧠 DeepSeek R1 excels at reasoning and complex problem-solving.",
-                "DeepSeek R1: Top benchmark scores in math, coding, and logic.",
-                "This is DeepSeek R1 - leader in SWE-Bench and reasoning tasks."
-            ],
-            nova: [
-                "⚡ Nova 2 Lite - fastest free model with multimodal capabilities.",
-                "Nova delivers lightning speed for real-time chat applications.",
-                "Amazon Nova 2 Lite: Optimized for speed + 300K token context."
-            ],
-            qwen: [
-                "💻 Qwen3 Coder - #1 on CodeForces and LiveCodeBench.",
-                "Qwen3 dominates programming tasks and code generation.",
-                "This response powered by Qwen3 - coding specialist."
-            ]
-        };
+      document.querySelectorAll('[data-action="backspace"]').forEach(button => {
+        button.addEventListener('click', backspace);
+      });
 
-        async function sendMessage() {
-            const chatInput = document.getElementById('chatInput');
-            const message = chatInput.value.trim();
-            if (!message) return;
+      // Enter button
+      document.getElementById('enterButton').addEventListener('click', showPayment);
 
-            const sendBtn = document.getElementById('sendBtn');
-            sendBtn.disabled = true;
-            sendBtn.textContent = '…';
+      // Payment overlay buttons
+      document.getElementById('checkoutButton').addEventListener('click', proceedToCheckout);
+      document.getElementById('cancelButton').addEventListener('click', closePayment);
+    });
 
-            addMessage(message, true);
-            chatInput.value = '';
+    async function onConfigChange(config) {
+      const baseSize = config.font_size || defaultConfig.font_size;
+      const customFont = config.font_family || defaultConfig.font_family;
+      const baseFontStack = 'system-ui, -apple-system, sans-serif';
+      
+      // Update text content
+      document.getElementById('mainHeadline').textContent = config.main_headline || defaultConfig.main_headline;
+      document.getElementById('subHeadline').textContent = config.sub_headline || defaultConfig.sub_headline;
+      document.getElementById('priceText').textContent = config.price_text || defaultConfig.price_text;
+      document.getElementById('enterButton').textContent = config.button_text || defaultConfig.button_text;
+      
+      // Update colors
+      const bgStart = config.background_gradient_start || defaultConfig.background_gradient_start;
+      const bgEnd = config.background_gradient_end || defaultConfig.background_gradient_end;
+      const primaryColor = config.primary_color || defaultConfig.primary_color;
+      const textColor = config.text_color || defaultConfig.text_color;
+      
+      document.querySelector('main > div').style.background = `linear-gradient(135deg, ${bgStart} 0%, ${bgEnd} 100%)`;
+      document.getElementById('mainHeadline').style.color = primaryColor;
+      document.getElementById('enterButton').style.background = `linear-gradient(135deg, ${bgStart} 0%, ${bgEnd} 100%)`;
+      
+      // Update fonts
+      document.getElementById('mainHeadline').style.fontFamily = `${customFont}, ${baseFontStack}`;
+      document.getElementById('mainHeadline').style.fontSize = `${baseSize * 2.5}px`;
+      document.getElementById('subHeadline').style.fontFamily = `${customFont}, ${baseFontStack}`;
+      document.getElementById('subHeadline').style.fontSize = `${baseSize * 1.125}px`;
+      document.getElementById('priceText').style.fontSize = `${baseSize * 1.125}px`;
+      document.getElementById('enterButton').style.fontSize = `${baseSize * 1.25}px`;
+    }
 
-            // Demo delay + model-specific response
-            await new Promise(resolve => setTimeout(resolve, 1200 + Math.random() * 800));
-            
-            const activeTab = document.querySelector('.tab.active').dataset.model;
-            const response = demoResponses[activeTab][Math.floor(Math.random() * demoResponses[activeTab].length)];
-            addMessage(response, false);
-
-            sendBtn.disabled = false;
-            sendBtn.textContent = 'Send';
-            chatInput.focus();
-        }
-
-        document.getElementById('sendBtn').onclick = sendMessage;
-        document.getElementById('chatInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities: (config) => ({
+          recolorables: [
+            {
+              get: () => config.background_gradient_start || defaultConfig.background_gradient_start,
+              set: (value) => {
+                config.background_gradient_start = value;
+                window.elementSdk.setConfig({ background_gradient_start: value });
+              }
+            },
+            {
+              get: () => config.background_gradient_end || defaultConfig.background_gradient_end,
+              set: (value) => {
+                config.background_gradient_end = value;
+                window.elementSdk.setConfig({ background_gradient_end: value });
+              }
+            },
+            {
+              get: () => config.primary_color || defaultConfig.primary_color,
+              set: (value) => {
+                config.primary_color = value;
+                window.elementSdk.setConfig({ primary_color: value });
+              }
+            },
+            {
+              get: () => config.text_color || defaultConfig.text_color,
+              set: (value) => {
+                config.text_color = value;
+                window.elementSdk.setConfig({ text_color: value });
+              }
+            },
+            {
+              get: () => config.card_background || defaultConfig.card_background,
+              set: (value) => {
+                config.card_background = value;
+                window.elementSdk.setConfig({ card_background: value });
+              }
             }
-        });
-    </script>
-</body>
+          ],
+          borderables: [],
+          fontEditable: {
+            get: () => config.font_family || defaultConfig.font_family,
+            set: (value) => {
+              config.font_family = value;
+              window.elementSdk.setConfig({ font_family: value });
+            }
+          },
+          fontSizeable: {
+            get: () => config.font_size || defaultConfig.font_size,
+            set: (value) => {
+              config.font_size = value;
+              window.elementSdk.setConfig({ font_size: value });
+            }
+          }
+        }),
+        mapToEditPanelValues: (config) => new Map([
+          ["main_headline", config.main_headline || defaultConfig.main_headline],
+          ["sub_headline", config.sub_headline || defaultConfig.sub_headline],
+          ["price_text", config.price_text || defaultConfig.price_text],
+          ["button_text", config.button_text || defaultConfig.button_text]
+        ])
+      });
+    }
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9af992930606bec8',t:'MTc2NjAwNzU2MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
